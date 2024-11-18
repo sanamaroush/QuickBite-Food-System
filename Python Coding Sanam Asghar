@@ -1,0 +1,139 @@
+import sys
+from quickbite import QuickBiteApp
+
+# Entry point for the QuickBite application
+if __name__ == "__main__":
+    app = QuickBiteApp()
+    try:
+        # Start the application
+        app.run()
+    except KeyboardInterrupt:
+        # Handle user interruption gracefully
+        print("\nProcess interrupted. Exiting...")
+        sys.exit()
+class Menu:
+    def __init__(self):
+        # Initialize the menu with available items and their prices
+        self.items = {
+            "Burger": 6.00,
+            "Pizza": 8.50,
+            "Fries": 2.00,
+            "Soda": 1.50,
+            "Salad": 4.00
+        }
+
+    def display(self):
+        # Display the menu to the user
+        print("\n--- QuickBite Menu ---")
+        for item, price in self.items.items():
+            print(f"{item}: ${price:.2f}")
+        print("\nType 'done' to finish ordering.\n")
+
+    def is_item_available(self, item):
+        # Check if an item is available in the menu
+        return item in self.items
+
+    def get_price(self, item):
+        # Retrieve the price of an item (returns 0.0 if the item is not found)
+        return self.items.get(item, 0.0)
+from menu import Menu
+
+class Order:
+    def __init__(self, menu: Menu):
+        # Initialize an order with a reference to the menu
+        self.menu = menu
+        self.order_items = []  # Stores items in the order
+
+    def add_item(self, item, quantity):
+        # Add an item to the order with its quantity and calculate the total price for that item
+        price = self.menu.get_price(item)
+        item_total = price * quantity
+        self.order_items.append((item, quantity, item_total))  # Store the item details
+        return item_total
+
+    def calculate_total(self):
+        # Calculate the total price for all items in the order
+        return sum(item[2] for item in self.order_items)
+
+    def get_order_items(self):
+        # Retrieve the list of items in the order
+        return self.order_items
+import random
+from menu import Menu
+from order import Order
+from receipt import Receipt
+
+class QuickBiteApp:
+    def __init__(self):
+        # Initialize the application with a menu, an order, and a unique order number
+        self.menu = Menu()
+        self.order = Order(self.menu)
+        self.order_number = random.randint(1000, 9999)  # Generate a random order number
+
+    def take_order(self):
+        # Take the user's order interactively
+        while True:
+            self.menu.display()  # Show the menu
+
+            # Prompt the user for an item
+            item = input("Enter the item name you want to order (or 'done' to complete): ").title()
+
+            if item.lower() == 'done':  # User finishes ordering
+                break
+
+            if not self.menu.is_item_available(item):  # Check if the item is available
+                print("Item not available. Please choose from the menu.")
+                continue
+
+            try:
+                # Ask for the quantity of the item
+                quantity = int(input(f"Enter the quantity for {item}: "))
+                if quantity <= 0:  # Validate positive quantity
+                    print("Quantity must be a positive number. Please try again.")
+                    continue
+            except ValueError:
+                # Handle invalid input for quantity
+                print("Invalid input. Please enter a valid quantity.")
+                continue
+
+            # Add the item to the order and display its total
+            item_total = self.order.add_item(item, quantity)
+            print(f"{quantity} x {item} added to your order. Total for this item: ${item_total:.2f}\n")
+
+    def run(self):
+        # Run the main flow of the application
+        print("Welcome to QuickBite's Food Ordering System!")
+        self.take_order()  # Start the order-taking process
+
+        # Generate a receipt if items have been ordered
+        if self.order.get_order_items():
+            total = self.order.calculate_total()
+            receipt_time = "2024-11-16 15:30:00"  # Example timestamp (could use current time dynamically)
+            Receipt.print(self.order.get_order_items(), total, receipt_time, self.order_number)
+        else:
+            # If no items were ordered, thank the user
+            print("No items ordered. Thank you for visiting QuickBite!")
+class Receipt:
+    @staticmethod
+    def print(order_items, total, receipt_time, order_number):
+        # Print the receipt with order details and total price
+        print("\n--- Your Receipt ---")
+        print(f"Order Number: {order_number}")  # Unique order number
+        print(f"Order Time: {receipt_time}")  # Time of the order
+
+        # Define headers for the receipt table
+        headers = ["Item", "Quantity", "Total"]
+
+        # Print the headers with spacing
+        header_line = f"{headers[0]:<20} {headers[1]:<10} {headers[2]:<10}"
+        print(header_line)
+        print("-" * len(header_line))  # Underline the header for clarity
+
+        # Print each item in the order
+        for item, quantity, item_total in order_items:
+            print(f"{item:<20} {quantity:<10} ${item_total:.2f}")
+
+        # Print the grand total
+        print(f"\nGrand Total: ${total:.2f}")
+        print("Thank you for ordering with QuickBite!\n")
+
